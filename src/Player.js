@@ -59,7 +59,6 @@ export class Player {
             this.canvas.addEventListener('click', () => {
                 if (!document.pointerLockElement) {
                     this.canvas.requestPointerLock();
-                    console.log('Pointer lock requested'); // 디버깅
                 }
             });
         }
@@ -72,7 +71,6 @@ export class Player {
 
     onKeyDown(event) {
         this.keys[event.code] = true;
-        console.log('Key pressed:', event.code); // 디버깅
     }
 
     onKeyUp(event) {
@@ -87,11 +85,7 @@ export class Player {
     }
 
     onPointerLockChange() {
-        if (document.pointerLockElement) {
-            console.log('Pointer lock activated!'); // 디버깅
-        } else {
-            console.log('Pointer lock deactivated'); // 디버깅
-        }
+        // Pointer lock 상태 변경 처리
     }
 
     handleMouseLook() {
@@ -113,10 +107,7 @@ export class Player {
     }
 
     handleMovement(deltaTime, collisionObjects) {
-        if (!this.controlsEnabled) {
-            console.log('Controls not enabled!'); // 디버깅
-            return;
-        }
+        if (!this.controlsEnabled) return;
 
         const direction = new THREE.Vector3();
         const right = new THREE.Vector3();
@@ -130,33 +121,10 @@ export class Player {
         right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
         // 이동 입력
-        let moving = false;
-        if (this.keys['KeyW']) {
-            direction.add(forward);
-            moving = true;
-            console.log('W pressed - moving forward');
-        }
-        if (this.keys['KeyS']) {
-            direction.sub(forward);
-            moving = true;
-            console.log('S pressed - moving backward');
-        }
-        if (this.keys['KeyA']) {
-            direction.sub(right);
-            moving = true;
-            console.log('A pressed - moving left');
-        }
-        if (this.keys['KeyD']) {
-            direction.add(right);
-            moving = true;
-            console.log('D pressed - moving right');
-        }
-
-        if (moving) {
-            console.log('Player position BEFORE:', this.position.x.toFixed(2), this.position.y.toFixed(2), this.position.z.toFixed(2));
-            console.log('Direction:', direction.x.toFixed(2), direction.y.toFixed(2), direction.z.toFixed(2));
-            console.log('deltaTime:', deltaTime);
-        }
+        if (this.keys['KeyW']) direction.add(forward);
+        if (this.keys['KeyS']) direction.sub(forward);
+        if (this.keys['KeyA']) direction.sub(right);
+        if (this.keys['KeyD']) direction.add(right);
 
         // 달리기
         const isSprinting = this.keys['ShiftLeft'] || this.keys['ShiftRight'];
@@ -219,12 +187,6 @@ export class Player {
         // 카메라 위치 업데이트
         this.camera.position.copy(this.position);
         this.updateBoundingBox();
-
-        // 위치 변경 로그
-        if (moving) {
-            console.log('Player position AFTER:', this.position.x.toFixed(2), this.position.y.toFixed(2), this.position.z.toFixed(2));
-            console.log('---');
-        }
     }
 
     updateBoundingBox() {
