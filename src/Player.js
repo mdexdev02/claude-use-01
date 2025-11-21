@@ -23,7 +23,7 @@ export class Player {
         this.playerRadius = 0.5;
 
         // 마우스 컨트롤
-        this.mouseSensitivity = 0.025; // 0.005 → 0.025 (5배 빠르게)
+        this.mouseSensitivity = 0.0125; // 0.025 → 0.0125 (절반)
         this.pitch = 0;
         this.yaw = 0;
 
