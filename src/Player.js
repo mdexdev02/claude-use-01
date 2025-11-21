@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { Weapon } from './Weapon.js';
 
 export class Player {
-    constructor(camera, scene) {
+    constructor(camera, scene, canvas) {
         this.camera = camera;
         this.scene = scene;
+        this.canvas = canvas;
 
         // 플레이어 위치 및 속성
         this.position = new THREE.Vector3(0, 2, 0);
@@ -47,14 +48,21 @@ export class Player {
     enableControls() {
         this.controlsEnabled = true;
 
-        // 포인터 락 요청
-        document.body.requestPointerLock();
-
         // 이벤트 리스너 추가
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         document.addEventListener('keyup', this.onKeyUp.bind(this));
         document.addEventListener('mousemove', this.onMouseMove.bind(this));
         document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this));
+
+        // 클릭 시 포인터 락 요청
+        if (this.canvas) {
+            this.canvas.addEventListener('click', () => {
+                if (!document.pointerLockElement) {
+                    this.canvas.requestPointerLock();
+                    console.log('Pointer lock requested'); // 디버깅
+                }
+            });
+        }
     }
 
     disableControls() {
@@ -79,9 +87,10 @@ export class Player {
     }
 
     onPointerLockChange() {
-        if (!document.pointerLockElement && this.controlsEnabled) {
-            // 포인터 락이 해제되면 다시 요청
-            document.body.requestPointerLock();
+        if (document.pointerLockElement) {
+            console.log('Pointer lock activated!'); // 디버깅
+        } else {
+            console.log('Pointer lock deactivated'); // 디버깅
         }
     }
 

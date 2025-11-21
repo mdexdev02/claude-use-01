@@ -35,7 +35,7 @@ export class Game {
         this.kills = 0;
 
         // 플레이어 초기화
-        this.player = new Player(this.camera, this.scene);
+        this.player = new Player(this.camera, this.scene, this.renderer.domElement);
 
         // 환경 초기화
         this.environment = new Environment(this.scene);
