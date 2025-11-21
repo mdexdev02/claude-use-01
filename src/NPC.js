@@ -7,13 +7,13 @@ export class NPC {
         this.player = player;
 
         // NPC 속성
-        this.health = 100;
-        this.maxHealth = 100;
+        this.health = 50; // 100 → 50 (더 빨리 죽음)
+        this.maxHealth = 50;
         this.isAlive = true;
-        this.moveSpeed = 3;
-        this.detectionRange = 50;
-        this.shootRange = 40;
-        this.accuracy = 0.7; // 70% 명중률
+        this.moveSpeed = 2.5; // 3 → 2.5 (약간 느리게)
+        this.detectionRange = 35; // 50 → 35 (감지 범위 축소)
+        this.shootRange = 25; // 40 → 25 (사격 범위 축소)
+        this.accuracy = 0.25; // 70% → 25% (명중률 대폭 감소)
 
         // AI 상태
         this.state = 'patrol'; // patrol, chase, attack
@@ -23,7 +23,8 @@ export class NPC {
 
         // 사격 관련
         this.lastShotTime = 0;
-        this.fireRate = 1.5; // 초
+        this.fireRate = 2.5; // 1.5 → 2.5초 (더 느리게 사격)
+        this.damage = 5; // NPC 데미지
 
         // NPC 모델 생성
         this.createDetailedModel();
@@ -39,17 +40,49 @@ export class NPC {
     createDetailedModel() {
         this.mesh = new THREE.Group();
 
-        // 몸통
-        const bodyGeometry = new THREE.CapsuleGeometry(0.3, 1.2, 4, 8);
+        // 몸통 (전술 조끼)
+        const bodyGeometry = new THREE.CapsuleGeometry(0.3, 1.2, 8, 16);
         const bodyMaterial = new THREE.MeshStandardMaterial({
             color: 0x2a4a5a,
-            roughness: 0.7,
-            metalness: 0.2,
+            roughness: 0.6,
+            metalness: 0.3,
+            flatShading: false
         });
         const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
         body.position.y = 1;
         body.castShadow = true;
+        body.receiveShadow = true;
         this.mesh.add(body);
+
+        // 전술 조끼 플레이트
+        const plateGeometry = new THREE.BoxGeometry(0.5, 0.4, 0.15);
+        const plateMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a2a3a,
+            roughness: 0.5,
+            metalness: 0.4
+        });
+        const chestPlate = new THREE.Mesh(plateGeometry, plateMaterial);
+        chestPlate.position.set(0, 1.2, 0.25);
+        chestPlate.castShadow = true;
+        this.mesh.add(chestPlate);
+
+        // 어깨 패드
+        const shoulderGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+        const shoulderMaterial = new THREE.MeshStandardMaterial({
+            color: 0x3a3a3a,
+            roughness: 0.6,
+            metalness: 0.5
+        });
+
+        const leftShoulder = new THREE.Mesh(shoulderGeometry, shoulderMaterial);
+        leftShoulder.position.set(-0.4, 1.5, 0);
+        leftShoulder.castShadow = true;
+        this.mesh.add(leftShoulder);
+
+        const rightShoulder = new THREE.Mesh(shoulderGeometry, shoulderMaterial);
+        rightShoulder.position.set(0.4, 1.5, 0);
+        rightShoulder.castShadow = true;
+        this.mesh.add(rightShoulder);
 
         // 머리
         const headGeometry = new THREE.SphereGeometry(0.25, 16, 16);
@@ -62,17 +95,44 @@ export class NPC {
         head.castShadow = true;
         this.mesh.add(head);
 
-        // 헬멧
-        const helmetGeometry = new THREE.SphereGeometry(0.28, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        // 전술 헬멧 (더 디테일하게)
+        const helmetGeometry = new THREE.SphereGeometry(0.28, 16, 16, 0, Math.PI * 2, 0, Math.PI * 1.5);
         const helmetMaterial = new THREE.MeshStandardMaterial({
-            color: 0x3a3a3a,
-            roughness: 0.5,
-            metalness: 0.6,
+            color: 0x2a2a2a,
+            roughness: 0.4,
+            metalness: 0.7,
+            envMapIntensity: 1
         });
         const helmet = new THREE.Mesh(helmetGeometry, helmetMaterial);
-        helmet.position.y = 2.1;
+        helmet.position.y = 2.15;
         helmet.castShadow = true;
+        helmet.receiveShadow = true;
         this.mesh.add(helmet);
+
+        // 헬멧 바이저
+        const visorGeometry = new THREE.BoxGeometry(0.35, 0.12, 0.02);
+        const visorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            roughness: 0.1,
+            metalness: 0.9,
+            transparent: true,
+            opacity: 0.7
+        });
+        const visor = new THREE.Mesh(visorGeometry, visorMaterial);
+        visor.position.set(0, 2, 0.25);
+        visor.castShadow = true;
+        this.mesh.add(visor);
+
+        // 헬멧 레일 (장비 장착용)
+        const railGeometry = new THREE.BoxGeometry(0.3, 0.05, 0.05);
+        const railMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a4a4a,
+            roughness: 0.3,
+            metalness: 0.8
+        });
+        const rail = new THREE.Mesh(railGeometry, railMaterial);
+        rail.position.set(0, 2.3, 0.15);
+        this.mesh.add(rail);
 
         // 눈 (두 개)
         const eyeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
@@ -126,10 +186,11 @@ export class NPC {
         rightLeg.castShadow = true;
         this.mesh.add(rightLeg);
 
-        // 무기 (라이플)
+        // 무기 (더 디테일한 라이플)
         const weaponGroup = new THREE.Group();
 
-        const weaponBodyGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.6);
+        // 총몸
+        const weaponBodyGeometry = new THREE.BoxGeometry(0.12, 0.12, 0.7);
         const weaponMaterial = new THREE.MeshStandardMaterial({
             color: 0x1a1a1a,
             roughness: 0.3,
@@ -138,14 +199,62 @@ export class NPC {
         const weaponBody = new THREE.Mesh(weaponBodyGeometry, weaponMaterial);
         weaponGroup.add(weaponBody);
 
-        const barrelGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8);
+        // 총열
+        const barrelGeometry = new THREE.CylinderGeometry(0.025, 0.025, 0.5, 12);
         const barrel = new THREE.Mesh(barrelGeometry, weaponMaterial);
         barrel.rotation.z = Math.PI / 2;
-        barrel.position.set(0, 0, -0.4);
+        barrel.position.set(0, 0.02, -0.5);
         weaponGroup.add(barrel);
 
-        weaponGroup.position.set(0.3, 1.5, 0.3);
+        // 개머리판
+        const stockGeometry = new THREE.BoxGeometry(0.08, 0.15, 0.3);
+        const stockMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2a2a2a,
+            roughness: 0.6,
+            metalness: 0.4
+        });
+        const stock = new THREE.Mesh(stockGeometry, stockMaterial);
+        stock.position.set(0, -0.05, 0.5);
+        weaponGroup.add(stock);
+
+        // 탄창
+        const magGeometry = new THREE.BoxGeometry(0.08, 0.25, 0.12);
+        const magMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2a2a2a,
+            roughness: 0.5,
+            metalness: 0.6
+        });
+        const magazine = new THREE.Mesh(magGeometry, magMaterial);
+        magazine.position.set(0, -0.15, 0);
+        weaponGroup.add(magazine);
+
+        // 조준경
+        const scopeGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.15, 12);
+        const scopeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a0a0a,
+            roughness: 0.2,
+            metalness: 0.9
+        });
+        const scope = new THREE.Mesh(scopeGeometry, scopeMaterial);
+        scope.rotation.z = Math.PI / 2;
+        scope.position.set(0, 0.1, -0.1);
+        weaponGroup.add(scope);
+
+        // 총구
+        const muzzleGeometry = new THREE.CylinderGeometry(0.035, 0.03, 0.08, 12);
+        const muzzleMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a0a0a,
+            roughness: 0.3,
+            metalness: 0.8
+        });
+        const muzzle = new THREE.Mesh(muzzleGeometry, muzzleMaterial);
+        muzzle.rotation.z = Math.PI / 2;
+        muzzle.position.set(0, 0.02, -0.78);
+        weaponGroup.add(muzzle);
+
+        weaponGroup.position.set(0.3, 1.4, 0.35);
         weaponGroup.rotation.y = -Math.PI / 4;
+        weaponGroup.rotation.x = -0.1;
         this.mesh.add(weaponGroup);
         this.weaponGroup = weaponGroup;
 
@@ -307,12 +416,29 @@ export class NPC {
     }
 
     createMuzzleFlash() {
-        const flashLight = new THREE.PointLight(0xffaa00, 2, 5);
-        flashLight.position.copy(this.weaponGroup.position);
-        this.mesh.add(flashLight);
+        // 더 밝고 큰 총구 화염
+        const flashLight = new THREE.PointLight(0xff6600, 4, 8);
+        const worldPos = new THREE.Vector3();
+        this.weaponGroup.getWorldPosition(worldPos);
+        flashLight.position.copy(worldPos);
+        this.scene.add(flashLight);
+
+        // 파티클 효과도 추가 (간단한 버전)
+        const particleGeometry = new THREE.SphereGeometry(0.15, 4, 4);
+        const particleMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffaa00,
+            transparent: true,
+            opacity: 0.8
+        });
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.copy(worldPos);
+        this.scene.add(particle);
 
         setTimeout(() => {
-            this.mesh.remove(flashLight);
+            this.scene.remove(flashLight);
+            this.scene.remove(particle);
+            particleGeometry.dispose();
+            particleMaterial.dispose();
         }, 50);
     }
 

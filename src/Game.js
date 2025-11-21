@@ -3,6 +3,7 @@ import { Player } from './Player.js';
 import { Environment } from './Environment.js';
 import { NPC } from './NPC.js';
 import { UI } from './UI.js';
+import { ParticleSystem } from './ParticleSystem.js';
 
 export class Game {
     constructor() {
@@ -42,10 +43,13 @@ export class Game {
         // UI 초기화
         this.ui = new UI(this);
 
+        // 파티클 시스템 초기화
+        this.particleSystem = new ParticleSystem(this.scene);
+
         // NPC 배열
         this.npcs = [];
-        this.maxNPCs = 10;
-        this.npcSpawnInterval = 3000; // 3초마다 스폰
+        this.maxNPCs = 8; // 10 → 8 (최대 NPC 수 감소)
+        this.npcSpawnInterval = 6000; // 3초 → 6초 (스폰 속도 절반으로)
         this.lastNPCSpawn = 0;
 
         // 시간 관리
@@ -108,7 +112,7 @@ export class Game {
     }
 
     spawnInitialNPCs() {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 3; i++) { // 5 → 3 (초기 NPC 수 감소)
             this.spawnNPC();
         }
     }
@@ -164,13 +168,27 @@ export class Game {
                     }, 2000);
                 }
 
-                // 히트 이펙트
-                this.createHitEffect(intersects[0].point);
+                // 히트 이펙트 (혈흔 파티클)
+                const hitPoint = intersects[0].point;
+                const direction = this.camera.getWorldDirection(new THREE.Vector3());
+                this.particleSystem.createBloodEffect(hitPoint, direction);
+                this.createHitEffect(hitPoint);
             }
+        } else {
+            // 빗나간 경우 - 벽이나 바닥에 충돌 체크
+            this.checkEnvironmentHit();
         }
 
-        // 총구 화염 효과
-        this.createMuzzleFlash();
+        // 총구 화염 효과 (파티클)
+        const muzzlePosition = this.camera.position.clone();
+        const muzzleDirection = this.camera.getWorldDirection(new THREE.Vector3());
+        muzzlePosition.add(muzzleDirection.clone().multiplyScalar(0.5));
+        this.particleSystem.createMuzzleFlash(muzzlePosition, muzzleDirection);
+
+        // 탄피 배출
+        const casingPosition = muzzlePosition.clone();
+        casingPosition.x += 0.2;
+        this.particleSystem.createShellCasing(casingPosition, muzzleDirection);
     }
 
     createHitEffect(position) {
@@ -187,17 +205,62 @@ export class Game {
         }, 100);
     }
 
-    createMuzzleFlash() {
-        const flashLight = new THREE.PointLight(0xffaa00, 2, 10);
-        flashLight.position.copy(this.camera.position);
-        flashLight.position.add(
-            this.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.5)
-        );
-        this.scene.add(flashLight);
+    checkEnvironmentHit() {
+        // 환경(벽, 바닥 등)에 명중 체크
+        this.raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
 
-        setTimeout(() => {
-            this.scene.remove(flashLight);
-        }, 50);
+        const environmentObjects = [];
+        this.scene.traverse((child) => {
+            if (child.isMesh && !child.parent?.isGroup) {
+                environmentObjects.push(child);
+            }
+        });
+
+        const intersects = this.raycaster.intersectObjects(environmentObjects, false);
+
+        if (intersects.length > 0) {
+            const hitPoint = intersects[0].point;
+            const normal = intersects[0].face.normal;
+
+            // 스파크 효과
+            this.particleSystem.createImpactSpark(hitPoint, normal);
+
+            // 간단한 데칼 (충격 자국)
+            const decalGeometry = new THREE.CircleGeometry(0.1, 8);
+            const decalMaterial = new THREE.MeshBasicMaterial({
+                color: 0x2a2a2a,
+                transparent: true,
+                opacity: 0.6,
+                depthWrite: false
+            });
+            const decal = new THREE.Mesh(decalGeometry, decalMaterial);
+            decal.position.copy(hitPoint);
+            decal.lookAt(hitPoint.clone().add(normal));
+            decal.position.add(normal.multiplyScalar(0.01));
+            this.scene.add(decal);
+
+            // 데칼 페이드 아웃
+            setTimeout(() => {
+                const fadeStart = Date.now();
+                const fadeDuration = 2000;
+
+                const fade = () => {
+                    const elapsed = Date.now() - fadeStart;
+                    const progress = elapsed / fadeDuration;
+
+                    if (progress < 1) {
+                        decalMaterial.opacity = 0.6 * (1 - progress);
+                        requestAnimationFrame(fade);
+                    } else {
+                        this.scene.remove(decal);
+                        decalGeometry.dispose();
+                        decalMaterial.dispose();
+                    }
+                };
+
+                fade();
+            }, 3000);
+        }
     }
 
     start() {
@@ -261,7 +324,7 @@ export class Game {
                 if (npc.canShoot()) {
                     const hit = npc.shootAtPlayer();
                     if (hit) {
-                        this.player.takeDamage(10);
+                        this.player.takeDamage(npc.damage); // 10 → npc.damage (5)
                         this.ui.updateHealth(this.player.health);
 
                         if (this.player.health <= 0) {
