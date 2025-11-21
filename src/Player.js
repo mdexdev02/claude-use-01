@@ -78,10 +78,13 @@ export class Player {
     }
 
     onMouseMove(event) {
-        if (!this.controlsEnabled || !document.pointerLockElement) return;
+        if (!this.controlsEnabled) return;
 
-        this.mouseMovement.x = event.movementX;
-        this.mouseMovement.y = event.movementY;
+        // 포인터 락 여부와 관계없이 마우스 이동 처리
+        if (document.pointerLockElement) {
+            this.mouseMovement.x = event.movementX;
+            this.mouseMovement.y = event.movementY;
+        }
     }
 
     onPointerLockChange() {
