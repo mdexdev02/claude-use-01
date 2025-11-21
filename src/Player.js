@@ -23,7 +23,7 @@ export class Player {
         this.playerRadius = 0.5;
 
         // 마우스 컨트롤
-        this.mouseSensitivity = 0.005; // 0.002 → 0.005 (더 빠르게)
+        this.mouseSensitivity = 0.025; // 0.005 → 0.025 (5배 빠르게)
         this.pitch = 0;
         this.yaw = 0;
 
@@ -190,9 +190,11 @@ export class Player {
         nextPosition.y += this.velocity.y * deltaTime;
 
         // 충돌 감지
-        const tempBox = this.boundingBox.clone();
-        tempBox.min.add(nextPosition).sub(this.position);
-        tempBox.max.add(nextPosition).sub(this.position);
+        const tempBox = new THREE.Box3();
+        tempBox.setFromCenterAndSize(
+            nextPosition,
+            new THREE.Vector3(this.playerRadius * 2, this.playerHeight, this.playerRadius * 2)
+        );
 
         let collided = false;
         for (const obj of collisionObjects) {
