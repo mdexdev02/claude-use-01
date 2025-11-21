@@ -130,10 +130,33 @@ export class Player {
         right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
         // 이동 입력
-        if (this.keys['KeyW']) direction.add(forward);
-        if (this.keys['KeyS']) direction.sub(forward);
-        if (this.keys['KeyA']) direction.sub(right);
-        if (this.keys['KeyD']) direction.add(right);
+        let moving = false;
+        if (this.keys['KeyW']) {
+            direction.add(forward);
+            moving = true;
+            console.log('W pressed - moving forward');
+        }
+        if (this.keys['KeyS']) {
+            direction.sub(forward);
+            moving = true;
+            console.log('S pressed - moving backward');
+        }
+        if (this.keys['KeyA']) {
+            direction.sub(right);
+            moving = true;
+            console.log('A pressed - moving left');
+        }
+        if (this.keys['KeyD']) {
+            direction.add(right);
+            moving = true;
+            console.log('D pressed - moving right');
+        }
+
+        if (moving) {
+            console.log('Player position BEFORE:', this.position.x.toFixed(2), this.position.y.toFixed(2), this.position.z.toFixed(2));
+            console.log('Direction:', direction.x.toFixed(2), direction.y.toFixed(2), direction.z.toFixed(2));
+            console.log('deltaTime:', deltaTime);
+        }
 
         // 달리기
         const isSprinting = this.keys['ShiftLeft'] || this.keys['ShiftRight'];
@@ -196,6 +219,12 @@ export class Player {
         // 카메라 위치 업데이트
         this.camera.position.copy(this.position);
         this.updateBoundingBox();
+
+        // 위치 변경 로그
+        if (moving) {
+            console.log('Player position AFTER:', this.position.x.toFixed(2), this.position.y.toFixed(2), this.position.z.toFixed(2));
+            console.log('---');
+        }
     }
 
     updateBoundingBox() {
