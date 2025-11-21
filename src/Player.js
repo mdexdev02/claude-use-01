@@ -23,7 +23,7 @@ export class Player {
         this.playerRadius = 0.5;
 
         // 마우스 컨트롤
-        this.mouseSensitivity = 0.002;
+        this.mouseSensitivity = 0.005; // 0.002 → 0.005 (더 빠르게)
         this.pitch = 0;
         this.yaw = 0;
 
@@ -198,6 +198,7 @@ export class Player {
         for (const obj of collisionObjects) {
             if (tempBox.intersectsBox(obj)) {
                 collided = true;
+                console.log('COLLISION DETECTED!', obj); // 디버깅
                 break;
             }
         }
@@ -205,6 +206,7 @@ export class Player {
         if (!collided) {
             this.position.copy(nextPosition);
         } else {
+            console.log('Movement blocked by collision'); // 디버깅
             this.velocity.x = 0;
             this.velocity.z = 0;
         }
