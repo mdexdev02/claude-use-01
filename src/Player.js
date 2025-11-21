@@ -190,17 +190,14 @@ export class Player {
         nextPosition.y += this.velocity.y * deltaTime;
 
         // 충돌 감지
-        const tempBox = new THREE.Box3();
-        tempBox.setFromCenterAndSize(
-            nextPosition,
-            new THREE.Vector3(this.playerRadius * 2, this.playerHeight, this.playerRadius * 2)
-        );
+        const tempBox = this.boundingBox.clone();
+        tempBox.min.add(nextPosition).sub(this.position);
+        tempBox.max.add(nextPosition).sub(this.position);
 
         let collided = false;
         for (const obj of collisionObjects) {
             if (tempBox.intersectsBox(obj)) {
                 collided = true;
-                console.log('COLLISION DETECTED!', obj); // 디버깅
                 break;
             }
         }
@@ -208,7 +205,6 @@ export class Player {
         if (!collided) {
             this.position.copy(nextPosition);
         } else {
-            console.log('Movement blocked by collision'); // 디버깅
             this.velocity.x = 0;
             this.velocity.z = 0;
         }
