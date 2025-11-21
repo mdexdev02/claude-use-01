@@ -64,6 +64,7 @@ export class Player {
 
     onKeyDown(event) {
         this.keys[event.code] = true;
+        console.log('Key pressed:', event.code); // 디버깅
     }
 
     onKeyUp(event) {
@@ -103,7 +104,10 @@ export class Player {
     }
 
     handleMovement(deltaTime, collisionObjects) {
-        if (!this.controlsEnabled) return;
+        if (!this.controlsEnabled) {
+            console.log('Controls not enabled!'); // 디버깅
+            return;
+        }
 
         const direction = new THREE.Vector3();
         const right = new THREE.Vector3();
