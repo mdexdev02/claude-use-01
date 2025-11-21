@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valorant Style FPS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: #000;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+        }
+
+        .crosshair-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .crosshair-line.horizontal {
+            width: 14px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-line.vertical {
+            width: 2px;
+            height: 14px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #hud {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .hud-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        #health-bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            margin-left: 10px;
+        }
+
+        #health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff6b6b);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        #ammo-display {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        #start-screen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        #start-screen button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: all;
+            transition: transform 0.2s;
+        }
+
+        #start-screen button:hover {
+            transform: scale(1.1);
+        }
+
+        #start-screen .instructions {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.8;
+        }
+
+        #kill-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        #game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+
+        #game-over h2 {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #ff4444;
+        }
+
+        #game-over button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: all;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        #game-over button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen">
+        <h1>Valorant Style FPS</h1>
+        <button id="start-button">시작하기</button>
+        <div class="instructions">
+            <p><strong>조작법:</strong></p>
+            <p>WASD - 이동 | 마우스 - 조준 | 좌클릭 - 발사</p>
+            <p>Space - 점프 | Shift - 달리기 | R - 재장전</p>
+        </div>
+    </div>
+
+    <div id="ui-overlay">
+        <div id="crosshair">
+            <div class="crosshair-line horizontal"></div>
+            <div class="crosshair-line vertical"></div>
+        </div>
+
+        <div id="kill-counter">
+            <span>처치: </span><span id="kills">0</span>
+        </div>
+
+        <div id="hud">
+            <div class="hud-item">
+                <span>체력: </span>
+                <div id="health-bar">
+                    <div id="health-fill"></div>
+                </div>
+            </div>
+            <div class="hud-item" id="ammo-display">
+                <span>탄약: </span><span id="current-ammo">30</span> / <span id="total-ammo">120</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <h2>게임 오버</h2>
+        <p id="final-score">처치: 0</p>
+        <button id="restart-button">다시 시작</button>
+    </div>
+</body>
+</html>
